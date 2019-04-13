@@ -1,7 +1,6 @@
 package nl.appsource.json2influx;
 
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 
@@ -16,9 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @SpringBootApplication
 public class Json2Influx implements CommandLineRunner {
 
@@ -48,25 +44,6 @@ public class Json2Influx implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         
-        
-        AtomicInteger counter = new AtomicInteger(0);
-        webClient.get()
-            .uri("/vehicles")
-            .accept(MediaType.APPLICATION_STREAM_JSON)
-            .exchange()
-            .flatMapMany(response -> response.bodyToFlux(StockMeasurement.class))
-            .delayElements(Duration.ofSeconds(5))
-            .subscribe(s -> {
-                System.out.println(counter.incrementAndGet() + " >>>>>>>>>> " + s);
-            },
-            err -> System.out.println("Error on Vehicle Stream: " + err),
-            () -> System.out.println("Vehicle stream stoped!"));
-        
-        log.debug("Done");
-
-        
-        Thread.sleep(Integer.MAX_VALUE);
-                
         while (true) {
             webClient
                 .get()
@@ -74,8 +51,8 @@ public class Json2Influx implements CommandLineRunner {
                 .retrieve()
                 .bodyToFlux(StockMeasurement.class)
                 .log()
-//                .subscribe(new InfluxClient(url, username, password));
-                .subscribe(System.out::println)
+                .subscribe(new InfluxClient(url, username, password));
+//                .subscribe(System.out::println)
                 ;
             Thread.sleep(INTERVAL.toMillis());
         }
